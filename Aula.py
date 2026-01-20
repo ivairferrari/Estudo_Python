@@ -6,31 +6,29 @@ import yfinance as yf
 # Criar as funções de carregamento de dados
 @st.cache_data
 def carregar_dados(empresa):
-    dados_acao = yf.Ticker(empresa)
-    cotacoes_acao = dados_acao.history(start="2010-01-01", end="2025-12-31")
-    cotacoes_acao =  cotacoes_acao[["Close"]]
-    return cotacoes_acao
+    texto_tickers = " ".join(empresa)
+    dados_acao = yf.Tickers(texto_tickers)
+    cotacoes_acao = dados_acao.history(start="2010-01-01", end="2024-12-31")
     
-# --- CRIAR A INTERFACE DO STREAMLIT ---
+    cotacoes_acao =  cotacoes_acao["Close"]
+    return cotacoes_acao
 
-st.write("# App Preço de Ações")
+acoes=["ITUB4.SA", "PETR4.SA", "VALE3.SA", "ABEV3.SA"]
+dados = carregar_dados(acoes)
 
-# Criar uma caixa de texto para o usuário digitar o ticker
-# O 'value' é o valor padrão que já vem preenchido
-ticker = st.text_input("Digite o Ticker da empresa (ex: ITUB4.SA, PETR4.SA, AAPL):", value="ITUB4.SA")
-
-# Chamamos a função passando o que o usuário digitou
-dados = carregar_dados(ticker)
-
-st.write(f"""
-O Gráfico abaixo mostra a evolução do preço das ações da **{ticker}** de 2010 a 2024.
+# criar a interface do streamlit
+st.write("""
+# App Preço de Ações
+O Gráfico abaixo mostra a evolução do preço das ações ao longo dos anos.
          """)
 
-# Criar o gráfico
-# Se o ticker for inválido, o yfinance retorna vazio, então verificamos se há dados
-if not dados.empty:
-    st.line_chart(dados)
-else:
-    st.error("Não foi possível encontrar dados para este Ticker. Verifique se escreveu corretamente (ex: PETR4.SA).")
+# Prepara as visualizações - filtros
+lista_acoes = st.multiselect("Escolhas as açõe para visualizar", dados.columns)
+if lista_acoes:
+        dados = dados[lista_acoes]
+        if len(lista_acoes) == 1:
+            acao_unica = lista_acoes[0]
+            dados = dados.rename(columns={acao_unica: "Close"})      
 
-st.write("# Fim do APP")
+# criar o gráfico
+st.line_chart(dados)
